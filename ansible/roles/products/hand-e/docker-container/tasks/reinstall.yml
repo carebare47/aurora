@@ -1,4 +1,16 @@
 ---
+
+- name: Checking if container exists
+  shell: "docker ps -aq -f name=^/{{ container_name }}$"
+  register: docker_id
+  when: docker_id is not defined
+  changed_when: docker_id is not defined
+
+- name: Set container_exists to true
+  when: docker_id.stdout | length > 0
+  set_fact:
+    container_exists: true
+
 - name: Create the shadow_hand_launcher_folder
   file:
     path: "{{ shadow_hand_launcher_folder }}"
@@ -11,6 +23,7 @@
     mode: '755'
 
 - name: Creating the container
+  changed_when: not container_exists
   docker_container:
     name: "{{ container_name }}"
     image: "{{ full_image_name }}"
@@ -31,3 +44,4 @@
 
 - name: Copying hand setup script into docker container
   shell: "docker cp {{ shadow_hand_launcher_folder }}/setup_dexterous_hand.sh {{ container_name }}:/usr/local/bin/setup_dexterous_hand.sh"
+  changed_when: not container_exists
