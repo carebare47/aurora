@@ -1,5 +1,22 @@
 ---
+- name: Check if AWS is already installed
+  stat: 'path=/etc/init.d/aws'
+  register: aws_check
+  ignore_errors: yes
+
+- name: echo the aws_check if False
+  when: not aws_check.stat.exists
+  debug:
+    msg: "aws_check= {{ aws_check.stat.exists }}"
+
+- name: echo the aws_check if True
+  when: aws_check.stat.exists
+  debug:
+    msg: "aws_check= {{ aws_check.stat.exists }}"
+
 - name: Make sure AWS requirements.txt exists locally
+  when: not aws_check.stat.exists
+  changed_when: not aws_check.stat.exists
   copy:
     src: files/requirements.txt
     dest: "/tmp/aws-cli-requirements.txt"
@@ -8,11 +25,15 @@
     mode: 0644
 
 - name: Install AWS CLI
+  when: not aws_check.stat.exists
+  changed_when: not aws_check.stat.exists
   pip:
     requirements: "/tmp/aws-cli-requirements.txt"
   become: true
 
 - name: Make sure shadow-upload.sh exists locally
+  when: not aws_check.stat.exists
+  changed_when: not aws_check.stat.exists
   copy:
     src: files/shadow-upload.sh
     dest: "/tmp/shadow-upload.sh"
@@ -21,9 +42,13 @@
     mode: 0644
 
 - name: Copy shadow-upload.sh to the docker container
+  when: not aws_check.stat.exists
+  changed_when: not aws_check.stat.exists
   shell: "docker cp /tmp/shadow-upload.sh {{ container_name }}:/usr/local/bin/shadow-upload.sh"
 
 - name: Copy customer.key to the docker container
+  when: not aws_check.stat.exists
+  changed_when: not aws_check.stat.exists
   shell: "echo {{ customer_key }} > /tmp/customer.key; docker cp /tmp/customer.key {{ container_name }}:/usr/local/bin/customer.key"
 
 - name: Removing customer.key from local
